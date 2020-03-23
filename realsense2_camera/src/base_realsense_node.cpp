@@ -1447,14 +1447,14 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
         }
 
         ros::Time t;
-        if (_sync_frames)
-        {
-            t = ros::Time::now();
-        }
-        else
-        {
+//        if (_sync_frames)
+//        {
+//            t = ros::Time::now();
+//        }
+//        else
+//        {
             t = ros::Time(_ros_time_base.toSec()+ (/*ms*/ frame_time - /*ms*/ _camera_time_base) / /*ms to seconds*/ 1000);
-        }
+//        }
 
         if (frame.is<rs2::frameset>())
         {

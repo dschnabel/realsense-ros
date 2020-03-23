@@ -34,10 +34,11 @@ if(SET_USER_BREAK_AT_STARTUP)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBPDEBUG")
 endif()
 
-find_package(realsense2 2.29.0)
-if(NOT realsense2_FOUND)
-    message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
-endif()
+#set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH} /mnt/librealsense/build")
+#find_package(realsense2 2.31.0)
+#if(NOT realsense2_FOUND)
+#    message(FATAL_ERROR "\n\n Intel RealSense SDK 2.0 is missing, please install it from https://github.com/IntelRealSense/librealsense/releases\n\n")
+#endif()
 
 if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
     message(STATUS "Create Release Build.")
@@ -46,7 +47,7 @@ else()
     message(STATUS "Create Debug Build.")
 endif()
 
-set(CMAKE_CXX_FLAGS "-fPIE -fPIC -std=c++11 -D_FORTIFY_SOURCE=2 -fstack-protector -Wformat -Wformat-security -Wall ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-fPIE -fPIC -std=c++11 -D_FORTIFY_SOURCE=2 -fstack-protector -Wformat -Wformat-security -Wall -lrealsense2 ${CMAKE_CXX_FLAGS}")
 
 add_message_files(
     FILES

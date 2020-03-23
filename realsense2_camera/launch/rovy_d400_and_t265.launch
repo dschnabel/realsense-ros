@@ -1,0 +1,35 @@
+<launch>
+ <arg name="device_type_camera1"   default="t265"/>
+ <arg name="serial_no_camera1"     default=""/>
+ <arg name="serial_no_camera2"     default=""/>
+ <arg name="camera1"               default="t265"/>
+ <arg name="camera2"               default="d435"/>
+ <arg name="tf_prefix_camera1"     default="$(arg camera1)"/>
+ <arg name="tf_prefix_camera2"     default="$(arg camera2)"/>
+ <arg name="initial_reset"         default="true"/>
+ <arg name="enable_fisheye"        default="false"/>
+ <arg name="topic_odom_in"         default="odom_in"/>
+ <arg name="calib_odom_file"       default=""/>
+
+ <group ns="$(arg camera1)">
+  <include file="$(find realsense2_camera)/launch/includes/nodelet.launch.xml">
+   <arg name="device_type"         value="$(arg device_type_camera1)"/>
+   <arg name="serial_no"           value="$(arg serial_no_camera1)"/>
+   <arg name="tf_prefix"           value="$(arg tf_prefix_camera1)"/>
+   <arg name="initial_reset"       value="$(arg initial_reset)"/>
+   <arg name="enable_fisheye1"     value="$(arg enable_fisheye)"/>
+   <arg name="enable_fisheye2"     value="$(arg enable_fisheye)"/>
+   <arg name="topic_odom_in"       value="$(arg topic_odom_in)"/>
+   <arg name="calib_odom_file"     value="$(arg calib_odom_file)"/>
+  </include>
+ </group>
+
+ <include file="$(find timed_roslaunch)/launch/timed_roslaunch.launch">
+  <arg name="time" value="2" />
+  <arg name="pkg" value="realsense2_camera" />
+  <arg name="file" value="rovy_d435.launch" />
+  <arg name="value" value="camera2:=$(arg camera2) serial_no_camera2:=$(arg serial_no_camera2)" />
+ </include>
+
+ <node pkg="tf" type="static_transform_publisher" name="t265_to_d400" args="0 0 0 0 0 0 /$(arg tf_prefix_camera1)_link /$(arg tf_prefix_camera2)_link 100"/>
+</launch>
