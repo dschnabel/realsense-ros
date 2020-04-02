@@ -177,5 +177,6 @@
     <param name="unite_imu_method"         type="str"    value="$(arg unite_imu_method)"/>
     <param name="allow_no_texture_points"  type="bool"   value="$(arg allow_no_texture_points)"/>
 
+    <remap from="odom/sample"            to="/odom"/>
   </node>
 </launch>

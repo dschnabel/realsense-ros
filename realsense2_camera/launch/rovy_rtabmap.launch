@@ -11,6 +11,12 @@
     <arg name="delete_db"                 default="false"/>
     <arg name="mapping"                   default="false"/>
 
+<!--
+    <param name="robot_description" command="$(find xacro)/xacro $(find realsense2_camera)/launch/model/urdf/rovy.xml" />
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+-->
+
     <rosparam>
             /t265/tracking_module/enable_relocalization: false
     </rosparam>    
@@ -19,17 +25,27 @@
     </include>
 
     <include file="$(find rtabmap_ros)/launch/rtabmap.launch">
-            <arg name="rtabmap_args"       value="--delete_db_on_start --Vis/PnPFlags 1 --Rtabmap/DetectionRate 2 --Grid/MaxObstacleHeight 0.2 --Grid/RangeMax 2 --Grid/RayTracing true --Grid/CellSize 0.02" if="$(arg delete_db)"/>
-            <arg name="rtabmap_args"       value="--Vis/PnPFlags 1 --Rtabmap/DetectionRate 2 --Grid/MaxObstacleHeight 0.2 --Grid/RangeMax 2 --Grid/RayTracing true --Grid/CellSize 0.02" unless="$(arg mapping)"/>
+            <arg name="cfg"                value="$(find realsense2_camera)/launch/config.ini"/>
+            <arg name="rtabmap_args"       value="--delete_db_on_start" if="$(arg delete_db)"/>
             <arg name="localization"       value="true" unless="$(arg mapping)"/>
-            <arg name="depth_topic"        value="/$(arg camera2)/aligned_depth_to_color/image_raw"/>
-            <arg name="frame_id"           value="$(arg camera2)_link"/>
+            <arg name="frame_id"           value="d435_link"/>
             <arg name="visual_odometry"    value="false"/>
-            <arg name="odom_topic"         value="/$(arg camera1)/odom/sample"/>
-            <arg name="rgb_topic"          value="/$(arg camera2)/color/image_raw"/>
-            <arg name="camera_info_topic"  value="/$(arg camera2)/color/camera_info"/>
+            <arg name="odom_topic"         value="/odom"/>
+            <arg name="rgb_topic"          value="/d435/color/image_raw"/>
+            <arg name="scan_cloud_topic"   value="/d435/depth/color/points"/>
+            <arg name="camera_info_topic"  value="/d435/color/camera_info"/>
             <arg name="queue_size"         value="200"/>
             <arg name="rviz"               value="$(arg use_rviz)"/>
             <arg name="rtabmapviz"         value="$(arg use_rtabmapviz)"/>
     </include>
+
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+<!--      <env name="ROSCONSOLE_CONFIG_FILE" value="$(find realsense2_camera)/launch/config"/> -->
+      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="global_costmap" />
+      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="local_costmap" />
+      <rosparam file="$(find realsense2_camera)/launch/params/local_costmap_params.yaml" command="load" />
+      <rosparam file="$(find realsense2_camera)/launch/params/global_costmap_params.yaml" command="load" />
+      <rosparam file="$(find realsense2_camera)/launch/params/base_local_planner_params.yaml" command="load" />
+    </node>
+
 </launch>
