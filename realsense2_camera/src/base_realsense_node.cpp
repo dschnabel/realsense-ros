@@ -612,6 +612,24 @@ void BaseRealSenseNode::getParameters()
     _pnh.param("angular_velocity_cov", _angular_velocity_cov, static_cast<double>(0.01));
     _pnh.param("hold_back_imu_for_frames", _hold_back_imu_for_frames, HOLD_BACK_IMU_FOR_FRAMES);
     _pnh.param("publish_odom_tf", _publish_odom_tf, PUBLISH_ODOM_TF);
+
+    // laser scan params
+    int scan_height, scan_tilt;
+    _pnh.param("scan_height", scan_height, 1);
+    _pnh.param("scan_tilt", scan_tilt, 0);
+
+    double range_min, range_max;
+    _pnh.param("scan_range_min", range_min, 0.1);
+    _pnh.param("scan_range_max", range_max, 2.0);
+
+    std::string scan_output_frame, scan_output_frame_default = "d435_scan";
+    _pnh.param("scan_output_frame", scan_output_frame, scan_output_frame_default);
+
+    _dtl.set_scan_height(scan_height);
+    _dtl.set_scan_tilt(scan_tilt);
+    _dtl.set_scan_time(1.0/_fps[DEPTH]);
+    _dtl.set_range_limits(range_min, range_max);
+    _dtl.set_output_frame(scan_output_frame);
 }
 
 void BaseRealSenseNode::setupDevice()
@@ -798,6 +816,7 @@ void BaseRealSenseNode::setupPublishers()
                 std::shared_ptr<FrequencyDiagnostics> frequency_diagnostics(new FrequencyDiagnostics(_fps[stream], aligned_stream_name, _serial_no));
                 _depth_aligned_image_publishers[stream] = {image_transport.advertise(aligned_image_raw.str(), 1), frequency_diagnostics};
                 _depth_aligned_info_publisher[stream] = _node_handle.advertise<sensor_msgs::CameraInfo>(aligned_camera_info.str(), 1);
+                _depth_aligned_scan_publisher[stream] = _node_handle.advertise<sensor_msgs::LaserScan>("scan", 1);
             }
 
             if (stream == DEPTH && _pointcloud)
@@ -875,9 +894,11 @@ void BaseRealSenseNode::publishAlignedDepthToOthers(rs2::frameset frames, const 
         stream_index_pair sip{stream_type, stream_index};
         auto& info_publisher = _depth_aligned_info_publisher.at(sip);
         auto& image_publisher = _depth_aligned_image_publishers.at(sip);
+        auto& scan_publisher = _depth_aligned_scan_publisher.at(sip);
 
         if(0 != info_publisher.getNumSubscribers() ||
-           0 != image_publisher.first.getNumSubscribers())
+           0 != image_publisher.first.getNumSubscribers() ||
+           0 != scan_publisher.getNumSubscribers())
         {
             std::shared_ptr<rs2::align> align;
             try{
@@ -896,7 +917,9 @@ void BaseRealSenseNode::publishAlignedDepthToOthers(rs2::frameset frames, const 
                          _depth_aligned_info_publisher,
                          _depth_aligned_image_publishers, _depth_aligned_seq,
                          _depth_aligned_camera_info, _optical_frame_id,
-                         _depth_aligned_encoding);
+                         _depth_aligned_encoding,
+                         true,
+                         &_depth_aligned_scan_publisher);
         }
     }
 }
@@ -1827,6 +1850,8 @@ void BaseRealSenseNode::calcAndPublishStaticTransform(const stream_index_pair& s
         publish_static_tf(transform_ts_, trans, Q, _base_frame_id, _depth_aligned_frame_id[stream]);
         publish_static_tf(transform_ts_, zero_trans, quaternion_optical, _depth_aligned_frame_id[stream], _optical_frame_id[stream]);
     }
+
+    publish_static_tf(transform_ts_, trans, Q, _base_frame_id, _dtl.get_output_frame());
 }
 
 void BaseRealSenseNode::SetBaseStream()
@@ -2152,7 +2177,8 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
                                      std::map<stream_index_pair, sensor_msgs::CameraInfo>& camera_info,
                                      const std::map<stream_index_pair, std::string>& optical_frame_id,
                                      const std::map<rs2_stream, std::string>& encoding,
-                                     bool copy_data_from_frame)
+                                     bool copy_data_from_frame,
+                                     std::map<stream_index_pair, ros::Publisher>* scan_publishers)
 {
     ROS_DEBUG("publishFrame(...)");
     unsigned int width = 0;
@@ -2209,6 +2235,23 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
         image_publisher.second->update();
         // ROS_INFO_STREAM("fid: " << cam_info.header.seq << ", time: " << std::setprecision (20) << t.toSec());
         ROS_DEBUG("%s stream published", rs2_stream_to_string(f.get_profile().stream_type()));
+    }
+
+    if (scan_publishers) {
+    	auto& scan_publisher = scan_publishers->at(stream);
+    	if(0 != scan_publisher.getNumSubscribers()) {
+    		std::string enc = encoding.at(stream.first);
+
+            auto& cam_info = camera_info.at(stream);
+            if (cam_info.width != width) {
+                updateStreamCalibData(f.get_profile().as<rs2::video_stream_profile>());
+            }
+            cam_info.header.stamp = t;
+            cam_info.header.seq = seq[stream];
+
+    		sensor_msgs::LaserScanPtr scan = _dtl.convert_msg(image, enc, cam_info);
+    		scan_publisher.publish(scan);
+    	}
     }
 }
 

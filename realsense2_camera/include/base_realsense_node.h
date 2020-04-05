@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../include/realsense_node_factory.h"
+#include "../include/depthimage_to_laserscan/DepthImageToLaserScan.h"
 #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
@@ -12,6 +13,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/LaserScan.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -216,7 +218,8 @@ namespace realsense2_camera
                           std::map<stream_index_pair, sensor_msgs::CameraInfo>& camera_info,
                           const std::map<stream_index_pair, std::string>& optical_frame_id,
                           const std::map<rs2_stream, std::string>& encoding,
-                          bool copy_data_from_frame = true);
+                          bool copy_data_from_frame = true,
+                          std::map<stream_index_pair, ros::Publisher>* scan_publishers = NULL);
         bool getEnabledProfile(const stream_index_pair& stream_index, rs2::stream_profile& profile);
 
         void publishAlignedDepthToOthers(rs2::frameset frames, const ros::Time& t);
@@ -303,6 +306,7 @@ namespace realsense2_camera
         std::map<stream_index_pair, int> _depth_aligned_seq;
         std::map<stream_index_pair, ros::Publisher> _depth_aligned_info_publisher;
         std::map<stream_index_pair, ImagePublisherWithFrequencyDiagnostics> _depth_aligned_image_publishers;
+        std::map<stream_index_pair, ros::Publisher> _depth_aligned_scan_publisher;
         std::map<stream_index_pair, ros::Publisher> _depth_to_other_extrinsics_publishers;
         std::map<stream_index_pair, rs2_extrinsics> _depth_to_other_extrinsics;
         std::map<std::string, rs2::region_of_interest> _auto_exposure_roi;
@@ -316,6 +320,8 @@ namespace realsense2_camera
 
         stream_index_pair _base_stream;
         const std::string _namespace;
+
+        depthimage_to_laserscan::DepthImageToLaserScan _dtl;
 
     };//end class
 

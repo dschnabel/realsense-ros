@@ -89,6 +89,10 @@
   <arg name="unite_imu_method"         default="none"/> <!-- Options are: [none, copy, linear_interpolation] -->
   <arg name="allow_no_texture_points"  default="false"/>
 
+  <arg name="scan_range_min"       default="0.1"/>
+  <arg name="scan_range_max"       default="5.0"/>
+  <arg name="scan_height"          default="100"/>
+  <arg name="scan_tilt"            default="0"/>
 
 <!--  <node unless="$(arg external_manager)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" required="$(arg required)"
 launch-prefix="gdbserver :1234"/> -->
@@ -179,6 +183,12 @@ launch-prefix="gdbserver :1234"/> -->
     <param name="unite_imu_method"         type="str"    value="$(arg unite_imu_method)"/>
     <param name="allow_no_texture_points"  type="bool"   value="$(arg allow_no_texture_points)"/>
 
-    <remap from="odom/sample"            to="/odom"/>
+    <param name="scan_range_min"           type="double" value="$(arg scan_range_min)"/>
+    <param name="scan_range_max"           type="double" value="$(arg scan_range_max)"/>
+    <param name="scan_height"              type="int"    value="$(arg scan_height)"/>
+    <param name="scan_tilt"                type="int"    value="$(arg scan_tilt)"/>
+
+    <remap from="odom/sample"              to="/odom"/>
+    <remap from="scan"                     to="/scan"/>
   </node>
 </launch>

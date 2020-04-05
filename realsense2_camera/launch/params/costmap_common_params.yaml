@@ -7,8 +7,5 @@ global_frame: map
 robot_base_frame: d435_link
 always_send_full_costmap: true
 
-observation_sources: point_cloud_sensor
-point_cloud_sensor: {sensor_frame: d435_link, data_type: PointCloud2, topic: /d435/depth/color/points, marking: true, clearing: true, min_obstacle_height: -0.11, max_obstacle_height: 0.2}
-
-#/rtabmap/cloud_map
-#/d435/depth/color/points
+observation_sources: scan_sensor
+scan_sensor: {sensor_frame: d435_link, data_type: LaserScan, topic: /scan, marking: true, clearing: true, min_obstacle_height: -0.10}

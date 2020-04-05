@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
     nodelet
     cv_bridge
     image_transport
+    image_geometry
     tf
     ddynamic_reconfigure
     diagnostic_updater
@@ -84,9 +85,12 @@ add_library(${PROJECT_NAME}
     include/realsense_node_factory.h
     include/base_realsense_node.h
     include/t265_realsense_node.h
+    include/depthimage_to_laserscan/depth_traits.h
+    include/depthimage_to_laserscan/DepthImageToLaserScan.h
     src/realsense_node_factory.cpp
     src/base_realsense_node.cpp
     src/t265_realsense_node.cpp
+    src/DepthImageToLaserScan.cpp
     )
 
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)

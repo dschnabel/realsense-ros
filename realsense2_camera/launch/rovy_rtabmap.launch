@@ -32,9 +32,8 @@
             <arg name="visual_odometry"    value="false"/>
             <arg name="odom_topic"         value="/odom"/>
             <arg name="rgb_topic"          value="/d435/color/image_raw"/>
-            <arg name="scan_cloud_topic"   value="/d435/depth/color/points"/>
             <arg name="camera_info_topic"  value="/d435/color/camera_info"/>
-            <arg name="queue_size"         value="200"/>
+            <arg name="queue_size"         value="100"/>
             <arg name="rviz"               value="$(arg use_rviz)"/>
             <arg name="rtabmapviz"         value="$(arg use_rtabmapviz)"/>
     </include>

@@ -18,6 +18,11 @@
       <arg name="enable_infra1"     value="false"/>
       <arg name="enable_infra2"     value="false"/>
       <arg name="enable_sync"       value="false"/>
+
+      <arg name="scan_range_min"       value="0.1"/>
+      <arg name="scan_range_max"       value="4.0"/>
+      <arg name="scan_height"          value="70"/>
+      <arg name="scan_tilt"            value="15"/>
     </include>
   </group>
 </launch>
