@@ -32,19 +32,11 @@
             <arg name="visual_odometry"    value="false"/>
             <arg name="odom_topic"         value="/odom"/>
             <arg name="rgb_topic"          value="/d435/color/image_raw"/>
+            <arg name="depth_topic"        value="/d435/aligned_depth_to_color/image_raw"/>
             <arg name="camera_info_topic"  value="/d435/color/camera_info"/>
             <arg name="queue_size"         value="100"/>
             <arg name="rviz"               value="$(arg use_rviz)"/>
             <arg name="rtabmapviz"         value="$(arg use_rtabmapviz)"/>
     </include>
-
-    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-<!--      <env name="ROSCONSOLE_CONFIG_FILE" value="$(find realsense2_camera)/launch/config"/> -->
-      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="global_costmap" />
-      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="local_costmap" />
-      <rosparam file="$(find realsense2_camera)/launch/params/local_costmap_params.yaml" command="load" />
-      <rosparam file="$(find realsense2_camera)/launch/params/global_costmap_params.yaml" command="load" />
-      <rosparam file="$(find realsense2_camera)/launch/params/base_local_planner_params.yaml" command="load" />
-    </node>
 
 </launch>

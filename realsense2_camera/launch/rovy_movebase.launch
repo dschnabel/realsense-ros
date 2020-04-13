@@ -1,0 +1,12 @@
+<launch>
+
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+<!--      <env name="ROSCONSOLE_CONFIG_FILE" value="$(find realsense2_camera)/launch/config"/> -->
+      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="global_costmap" />
+      <rosparam file="$(find realsense2_camera)/launch/params/costmap_common_params.yaml" command="load" ns="local_costmap" />
+      <rosparam file="$(find realsense2_camera)/launch/params/local_costmap_params.yaml" command="load" />
+      <rosparam file="$(find realsense2_camera)/launch/params/global_costmap_params.yaml" command="load" />
+      <rosparam file="$(find realsense2_camera)/launch/params/base_local_planner_params.yaml" command="load" />
+    </node>
+
+</launch>

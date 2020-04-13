@@ -1,11 +1,13 @@
 obstacle_range: 1.0
 raytrace_range: 4.0
-footprint: [[0.12, 0.14], [0.12, -0.14], [-0.12, -0.14], [-0.12, 0.14]]
+footprint: [[0.105, 0.145], [0.105, -0.145], [-0.24, -0.145], [-0.24, 0.145]]
 map_topic: /map
 subscribe_to_updates: true
 global_frame: map
 robot_base_frame: d435_link
 always_send_full_costmap: true
+max_planning_retries: 1
+clearing_rotation_allowed: false
 
 observation_sources: scan_sensor
-scan_sensor: {sensor_frame: d435_link, data_type: LaserScan, topic: /scan, marking: true, clearing: true, min_obstacle_height: -0.10}
+scan_sensor: {sensor_frame: d435_link, data_type: LaserScan, topic: /scan, marking: true, clearing: true, min_obstacle_height: 0.00}
