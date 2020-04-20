@@ -175,7 +175,7 @@ namespace depthimage_to_laserscan
         const sensor_msgs::LaserScanPtr& scan_msg) const{
       // Use correct principal point from calibration
       const float center_x = cam_model.cx();
-      const float center_y = cam_model.cy() + scan_tilt_;
+      const int floor_y = image.rows;
 
       // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
       const double unit_scaling = depthimage_to_laserscan::DepthTraits<T>::toMeters( T(1) );
@@ -184,17 +184,24 @@ namespace depthimage_to_laserscan
       const T* depth_row = reinterpret_cast<const T*>(&image.data[0]);
       const int row_step = (image.cols * image.elemSize()) / sizeof(T);
 
-      const int offset = (int)(center_y - scan_height_/2);
-      depth_row += offset*row_step; // Offset to center of image
+      const int offset = floor_y - scan_height_;
+      depth_row += offset*row_step;
 
-      for(int v = offset; v < offset+scan_height_; ++v, depth_row += row_step){
-        for (int u = 0; u < (int)image.cols; ++u) // Loop over each pixel in row
-        {
+      const T* depth_row_cpy = depth_row;
+      int index_old = -1;
+
+      for (int u = 0; u < (int)image.cols; ++u) { // Loop over each pixel in row
+        const double th = -atan2((double)(u - center_x) * constant_x, unit_scaling); // Atan2(x, z), but depth divides out
+        const int index = (th - scan_msg->angle_min) / scan_msg->angle_increment;
+
+        if (index == index_old) continue;
+        index_old = index;
+
+        depth_row = depth_row_cpy;
+
+        for(int v = offset; v < offset+scan_height_; ++v, depth_row += row_step){
           const T depth = depth_row[u];
-
           double r = depth; // Assign to pass through NaNs and Infs
-          const double th = -atan2((double)(u - center_x) * constant_x, unit_scaling); // Atan2(x, z), but depth divides out
-          const int index = (th - scan_msg->angle_min) / scan_msg->angle_increment;
 
           if (depthimage_to_laserscan::DepthTraits<T>::valid(depth)){ // Not NaN or Inf
             // Calculate in XYZ
