@@ -172,53 +172,7 @@ namespace depthimage_to_laserscan
     */
     template<typename T>
     void convert(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
-        const sensor_msgs::LaserScanPtr& scan_msg) const{
-      // Use correct principal point from calibration
-      const float center_x = cam_model.cx();
-      const int floor_y = image.rows;
-
-      // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
-      const double unit_scaling = depthimage_to_laserscan::DepthTraits<T>::toMeters( T(1) );
-      const float constant_x = unit_scaling / cam_model.fx();
-
-      const T* depth_row = reinterpret_cast<const T*>(&image.data[0]);
-      const int row_step = (image.cols * image.elemSize()) / sizeof(T);
-
-      const int offset = floor_y - scan_height_;
-      depth_row += offset*row_step;
-
-      const T* depth_row_cpy = depth_row;
-      int index_old = -1;
-
-      for (int u = 0; u < (int)image.cols; ++u) { // Loop over each pixel in row
-        const double th = -atan2((double)(u - center_x) * constant_x, unit_scaling); // Atan2(x, z), but depth divides out
-        const int index = (th - scan_msg->angle_min) / scan_msg->angle_increment;
-
-        if (index == index_old) continue;
-        index_old = index;
-
-        depth_row = depth_row_cpy;
-
-        for(int v = offset; v < offset+scan_height_; ++v, depth_row += row_step){
-          const T depth = depth_row[u];
-          double r = depth; // Assign to pass through NaNs and Infs
-
-          if (depthimage_to_laserscan::DepthTraits<T>::valid(depth)){ // Not NaN or Inf
-            // Calculate in XYZ
-            double x = (u - center_x) * depth * constant_x;
-            double z = depthimage_to_laserscan::DepthTraits<T>::toMeters(depth);
-
-            // Calculate actual distance
-            r = hypot(x, z);
-          }
-
-          // Determine if this point should be used.
-          if(use_point(r, scan_msg->ranges[index], scan_msg->range_min, scan_msg->range_max)){
-            scan_msg->ranges[index] = r;
-          }
-        }
-      }
-    }
+        const sensor_msgs::LaserScanPtr& scan_msg) const;
 
     image_geometry::PinholeCameraModel cam_model_; ///< image_geometry helper class for managing sensor_msgs/CameraInfo messages.
 
@@ -229,7 +183,6 @@ namespace depthimage_to_laserscan
     int scan_tilt_;
     std::string output_frame_id_; ///< Output frame_id for each laserscan.  This is likely NOT the camera's frame_id.
   };
-
 
 }; // depthimage_to_laserscan
 
