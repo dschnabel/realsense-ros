@@ -42,6 +42,48 @@ DepthImageToLaserScan::DepthImageToLaserScan()
   , scan_height_(1)
   , scan_tilt_(0)
 {
+    int mostLeftRow = 1, leftRow = 12, centerRow = 211, rightRow = 410, mostRightRow = FLOOR_MATRIX_ROWS;
+    int columns = FLOOR_MATRIX_COLS;
+
+    double co1Left = 0.465139, co1Center = 0.388712, co1Right = 0.454160;
+    double co1CenterLeftSteps = (co1Left - co1Center) / (double)(centerRow - leftRow);
+    double co1CenterRightSteps = (co1Right - co1Center) / (double)(rightRow - centerRow);
+
+    double co2Left = 0.002115389833247224, co2Center = 0.0017127089022463305, co2Right = 0.0012068192857903144;
+    double co2CenterLeftSteps = (co2Left - co2Center) / (double)(centerRow - leftRow);
+    double co2CenterRightSteps = (co2Right - co2Center) / (double)(rightRow - centerRow);
+
+    double co3Left = 0.0001507743215119495, co3Center = 0.00012619343106256133, co3Right = 0.00018707445822834342;
+    double co3CenterLeftSteps = (co3Left - co3Center) / (double)(centerRow - leftRow);
+    double co3CenterRightSteps = (co3Right - co3Center) / (double)(rightRow - centerRow);
+
+    double co1 = co1Center;
+    double co2 = co2Center;
+    double co3 = co3Center;
+    for (int i = centerRow; i >= mostLeftRow; i--) {
+        for (int x = 1; x <= columns; x++) {
+            floor_matrix_[i-1][x-1] = co1 + co2 * x + co3 * pow(x,2);
+        }
+        co1 += co1CenterLeftSteps;
+        co2 += co2CenterLeftSteps;
+        co3 += co3CenterLeftSteps;
+    }
+
+    co1 = co1Center;
+    co2 = co2Center;
+    co3 = co3Center;
+    for (int i = centerRow; i <= mostRightRow; i++) {
+        for (int x = 1; x <= columns; x++) {
+            floor_matrix_[i-1][x-1] = co1 + co2 * x + co3 * pow(x,2);
+        }
+        co1 += co1CenterRightSteps;
+        co2 += co2CenterRightSteps;
+        co3 += co3CenterRightSteps;
+    }
+
+//    for (int i = mostLeftRow; i <= mostRightRow; i++) {
+//        printf("%d: %f\n", i, floor_matrix_[i-1][25-1]);
+//    }
 }
 
 DepthImageToLaserScan::~DepthImageToLaserScan(){
