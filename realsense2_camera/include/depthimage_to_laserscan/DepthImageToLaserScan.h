@@ -185,7 +185,13 @@ namespace depthimage_to_laserscan
     int scan_height_; ///< Number of pixel rows to use when producing a laserscan from an area.
     int scan_tilt_;
     std::string output_frame_id_; ///< Output frame_id for each laserscan.  This is likely NOT the camera's frame_id.
-    double floor_matrix_[FLOOR_MATRIX_COLS][FLOOR_MATRIX_ROWS];
+
+    /*
+     * holds the distance to the floor for each pixel
+     * first pair element: the distance to floor at given pixel <col,row>
+     * second pair element: the max deviation to optimal value at given pixel <col,row>
+     */
+    std::pair<double,double> floor_matrix_[FLOOR_MATRIX_COLS][FLOOR_MATRIX_ROWS];
   };
 
 }; // depthimage_to_laserscan

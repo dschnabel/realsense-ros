@@ -42,48 +42,68 @@ DepthImageToLaserScan::DepthImageToLaserScan()
   , scan_height_(1)
   , scan_tilt_(0)
 {
+    /*
+     * Here we calculate the floor matrix with polynomial regression equations. The coefficients
+     * were acquired using acutal measured distances from the camera to the floor.
+     */
+
     int mostLeftCol = 1, leftCol = 12, centerCol = 211, rightCol = 410, mostRightCol = FLOOR_MATRIX_COLS;
     int rows = FLOOR_MATRIX_ROWS;
 
+    // quadradic regression for distance to floor (3 coefficients)
     double co1Left = 0.465139, co1Center = 0.388712, co1Right = 0.454160;
-    double co1CenterLeftSteps = (co1Left - co1Center) / (double)(centerCol - leftCol);
-    double co1CenterRightSteps = (co1Right - co1Center) / (double)(rightCol - centerCol);
+    double co1CenterLeftSteps = abs(co1Left - co1Center) / (double)(centerCol - leftCol);
+    double co1CenterRightSteps = abs(co1Right - co1Center) / (double)(rightCol - centerCol);
 
     double co2Left = 0.002115389833247224, co2Center = 0.0017127089022463305, co2Right = 0.0012068192857903144;
-    double co2CenterLeftSteps = (co2Left - co2Center) / (double)(centerCol - leftCol);
-    double co2CenterRightSteps = (co2Right - co2Center) / (double)(rightCol - centerCol);
+    double co2CenterLeftSteps = abs(co2Left - co2Center) / (double)(centerCol - leftCol);
+    double co2CenterRightSteps = abs(co2Right - co2Center) / (double)(rightCol - centerCol);
 
     double co3Left = 0.0001507743215119495, co3Center = 0.00012619343106256133, co3Right = 0.00018707445822834342;
-    double co3CenterLeftSteps = (co3Left - co3Center) / (double)(centerCol - leftCol);
-    double co3CenterRightSteps = (co3Right - co3Center) / (double)(rightCol - centerCol);
+    double co3CenterLeftSteps = abs(co3Left - co3Center) / (double)(centerCol - leftCol);
+    double co3CenterRightSteps = abs(co3Right - co3Center) / (double)(rightCol - centerCol);
+
+    // linear regression for max deviation to optimal value (2 coefficients)
+    double deCo1Left = 0.0033566764705882353, deCo1Center = 0.006114178571428572, deCo1Right = 0.009170321428571429;
+    double deCo1CenterLeftSteps = abs(deCo1Left - deCo1Center) / (double)(centerCol - leftCol);
+    double deCo1CenterRightSteps = abs(deCo1Right - deCo1Center) / (double)(rightCol - centerCol);
+
+    double deCo2Left = 0.0007411470588235294, deCo2Center = 0.00026210714285714287, deCo2Right = 0.0006376071428571429;
+    double deCo2CenterLeftSteps = abs(deCo2Left - deCo2Center) / (double)(centerCol - leftCol);
+    double deCo2CenterRightSteps = abs(deCo2Right - deCo2Center) / (double)(rightCol - centerCol);
 
     double co1 = co1Center;
     double co2 = co2Center;
     double co3 = co3Center;
-    for (int i = centerCol; i >= mostLeftCol; i--) {
-        for (int x = 1; x <= rows; x++) {
-            floor_matrix_[i-1][x-1] = co1 + co2 * x + co3 * pow(x,2);
+    double deCo1 = deCo1Center;
+    double deCo2 = deCo2Center;
+    for (int x = centerCol; x >= mostLeftCol; x--) {
+        for (int y = 1; y <= rows; y++) {
+            floor_matrix_[x-1][y-1] = std::make_pair(co1 + co2 * y + co3 * pow(y,2), deCo1 + deCo2 * y);
         }
         co1 += co1CenterLeftSteps;
         co2 += co2CenterLeftSteps;
         co3 += co3CenterLeftSteps;
+        deCo1 -= deCo1CenterLeftSteps; // left lower than center, use minus
+        deCo2 += deCo2CenterLeftSteps;
     }
 
     co1 = co1Center;
     co2 = co2Center;
     co3 = co3Center;
-    for (int i = centerCol; i <= mostRightCol; i++) {
-        for (int x = 1; x <= rows; x++) {
-            floor_matrix_[i-1][x-1] = co1 + co2 * x + co3 * pow(x,2);
+    deCo1 = deCo1Center;
+    deCo2 = deCo2Center;
+    for (int x = centerCol; x <= mostRightCol; x++) {
+        for (int y = 1; y <= rows; y++) {
+            floor_matrix_[x-1][y-1] = std::make_pair(co1 + co2 * y + co3 * pow(y,2), deCo1 + deCo2 * y);
         }
         co1 += co1CenterRightSteps;
-        co2 += co2CenterRightSteps;
+        co2 -= co2CenterRightSteps; // right lower than center, use minus
         co3 += co3CenterRightSteps;
+        deCo1 += deCo1CenterRightSteps;
+        deCo2 += deCo2CenterRightSteps;
     }
 
-//    for (int i = mostLeftRow; i <= mostRightRow; i++) {
-//        printf("%d: %f\n", i, floor_matrix_[i-1][25-1]);
-//    }
 }
 
 DepthImageToLaserScan::~DepthImageToLaserScan(){
