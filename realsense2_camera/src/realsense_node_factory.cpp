@@ -45,6 +45,7 @@ void RealSenseNodeFactory::closeDevice()
 RealSenseNodeFactory::~RealSenseNodeFactory()
 {
 	closeDevice();
+	_realSenseNode.reset(nullptr);
 }
 
 void RealSenseNodeFactory::getDevice(rs2::device_list list)
