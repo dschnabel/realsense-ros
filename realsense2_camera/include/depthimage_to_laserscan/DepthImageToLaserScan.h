@@ -160,6 +160,11 @@ namespace depthimage_to_laserscan
      */
     bool use_point(const float new_value, const float old_value, const float range_min, const float range_max) const;
 
+    void calibrate_floor(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
+                    const sensor_msgs::LaserScanPtr& scan_msg);
+
+    int is_floor(const int col, const int row, const double distance) const;
+
     /**
     * Converts the depth image to a laserscan using the DepthTraits to assist.
     *
