@@ -43,7 +43,7 @@
 #include <limits.h>
 #include <math.h>
 
-#define FLOOR_MATRIX_COLS   422
+#define FLOOR_MATRIX_COLS   424
 #define FLOOR_MATRIX_ROWS   50
 
 namespace depthimage_to_laserscan
@@ -118,7 +118,7 @@ namespace depthimage_to_laserscan
 
     const std::string& get_output_frame();
 
-    void set_scan_tilt(const int scan_tilt);
+    void set_scan_floor_tolerance(const double scan_floor_tolerance);
 
   private:
     /**
@@ -160,10 +160,9 @@ namespace depthimage_to_laserscan
      */
     bool use_point(const float new_value, const float old_value, const float range_min, const float range_max) const;
 
-    void calibrate_floor(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
-                    const sensor_msgs::LaserScanPtr& scan_msg);
+    void calibrate_floor(const int col, const int row, const double distance);
 
-    int is_floor(const int col, const int row, const double distance) const;
+    bool is_floor(const int col, const int row, const double distance) const;
 
     /**
     * Converts the depth image to a laserscan using the DepthTraits to assist.
@@ -180,7 +179,7 @@ namespace depthimage_to_laserscan
     */
     template<typename T>
     void convert(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
-        const sensor_msgs::LaserScanPtr& scan_msg) const;
+        const sensor_msgs::LaserScanPtr& scan_msg);
 
     image_geometry::PinholeCameraModel cam_model_; ///< image_geometry helper class for managing sensor_msgs/CameraInfo messages.
 
@@ -188,7 +187,7 @@ namespace depthimage_to_laserscan
     float range_min_; ///< Stores the current minimum range to use.
     float range_max_; ///< Stores the current maximum range to use.
     int scan_height_; ///< Number of pixel rows to use when producing a laserscan from an area.
-    int scan_tilt_;
+    double scan_floor_tolerance_;
     std::string output_frame_id_; ///< Output frame_id for each laserscan.  This is likely NOT the camera's frame_id.
 
     /*

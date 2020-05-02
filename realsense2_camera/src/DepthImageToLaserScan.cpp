@@ -34,12 +34,8 @@
 #include <depthimage_to_laserscan/DepthImageToLaserScan.h>
 #include <fstream>
 
-//#define CALIBRATION_MODE
+#define CALIBRATION_MODE 0
 #define UNDEFINED_DISTANCE 0.0
-
-#define IS_DIP -1
-#define IS_FLOOR 0
-#define IS_OBSTACLE 1
 
 struct floorDataPair {
     double min;
@@ -53,8 +49,12 @@ DepthImageToLaserScan::DepthImageToLaserScan()
   , range_min_(0.45)
   , range_max_(10.0)
   , scan_height_(1)
-  , scan_tilt_(0)
+  , scan_floor_tolerance_(0.0)
 {
+#if CALIBRATION_MODE
+    remove("floorData.bin");
+#endif
+
     std::ifstream floorDataFile("floorData.bin", std::ios::binary);
     if (floorDataFile.good()) {
         for (int x = 0; x < FLOOR_MATRIX_COLS; x++) {
@@ -75,7 +75,7 @@ DepthImageToLaserScan::DepthImageToLaserScan()
 }
 
 DepthImageToLaserScan::~DepthImageToLaserScan(){
-#ifdef CALIBRATION_MODE
+#if CALIBRATION_MODE
     // fill in missing points
     for (int x = 0; x < FLOOR_MATRIX_COLS; x++) {
         for (int y = 0; y < FLOOR_MATRIX_ROWS; y++) {
@@ -166,90 +166,63 @@ bool DepthImageToLaserScan::use_point(const float new_value, const float old_val
   return shorter_check;
 }
 
-void DepthImageToLaserScan::calibrate_floor(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
-                const sensor_msgs::LaserScanPtr& scan_msg) {
+void DepthImageToLaserScan::calibrate_floor(const int col, const int row, const double distance) {
+#if CALIBRATION_MODE
+    if (col < 0 || col >= FLOOR_MATRIX_COLS) return;
+    if (row < 0 || row >= FLOOR_MATRIX_ROWS) return;
 
-#ifdef CALIBRATION_MODE
-    // Use correct principal point from calibration
-    const float center_x = cam_model.cx();
-    const int floor_y = image.rows;
-
-    // Combine unit conversion (if necessary) with scaling by focal length for computing (X,Y)
-    const double unit_scaling = depthimage_to_laserscan::DepthTraits<uint16_t>::toMeters( uint16_t(1) );
-    const float constant_x = unit_scaling / cam_model.fx();
-
-    const uint16_t* depth_row = reinterpret_cast<const uint16_t*>(&image.data[0]);
-    const int row_step = (image.cols * image.elemSize()) / sizeof(uint16_t);
-
-    const int offset = floor_y - 50;
-    depth_row += offset*row_step;
-
-    const uint16_t* depth_row_cpy = depth_row;
-    int index_old = -1;
-
-    for (int u = 0; u < (int)image.cols; ++u) { // Loop over each pixel in row
-        const double th = -atan2((double)(u - center_x) * constant_x, unit_scaling); // Atan2(x, z), but depth divides out
-        const int index = (th - scan_msg->angle_min) / scan_msg->angle_increment;
-
-        if (index == index_old) continue;
-        index_old = index;
-
-        depth_row = depth_row_cpy;
-
-        int rows = offset+50;
-        for(int v = offset; v < rows; ++v, depth_row += row_step){
-            const uint16_t depth = depth_row[u];
-            double r = depth; // Assign to pass through NaNs and Infs
-
-            if (depthimage_to_laserscan::DepthTraits<uint16_t>::valid(depth)){ // Not NaN or Inf
-                // Calculate in XYZ
-                double x = (u - center_x) * depth * constant_x;
-                double z = depthimage_to_laserscan::DepthTraits<uint16_t>::toMeters(depth);
-
-                // Calculate actual distance
-                r = hypot(x, z);
+    if (distance > 0.35 && distance < 1.3) {
+        static unsigned int counter = 0;
+        static int override = 0;
+        if (counter++ >= 500000) {
+            if (counter == 500001) {
+                printf("Starting calibration ...\n");
             }
 
-            if (r > 0.35 && r < 0.89) {
-                int x = u;
-                int y = rows-v-1;
-                std::pair<double,double> &floorData = floor_matrix_[x][y];
-                const double &min = floorData.first;
-                const double &max = floorData.second;
-                if (min == UNDEFINED_DISTANCE || max == UNDEFINED_DISTANCE) {
-                    floor_matrix_[x][y] = std::make_pair(r, r);
-                } else if (r < min) {
-                    floor_matrix_[x][y] = std::make_pair(r, max);
-                } else if (r > max) {
-                    floor_matrix_[x][y] = std::make_pair(min, r);
-                }
+            std::pair<double,double> &floorData = floor_matrix_[col][row];
+            double min = floorData.first;
+            double max = floorData.second;
+            if (min == UNDEFINED_DISTANCE || max == UNDEFINED_DISTANCE) {
+                floor_matrix_[col][row] = std::make_pair(distance, distance);
+            } else if (distance < min) {
+                floor_matrix_[col][row] = std::make_pair(distance, max);
+                override++;
+            } else if (distance > max) {
+                floor_matrix_[col][row] = std::make_pair(min, distance);
+                override++;
+            }
+
+            static int counter2 = 0;
+            if (counter2++ >= 500000) {
+                printf("new limits: %d\n", override);
+                counter2 = 0;
+                override = 0;
             }
         }
     }
 #endif
-
 }
 
-int DepthImageToLaserScan::is_floor(const int col, const int row, const double distance) const {
-    if (col < 1 || col > 422) return IS_FLOOR;
-    if (row < 1 || row > 50) return IS_FLOOR;
+bool DepthImageToLaserScan::is_floor(const int col, const int row, const double distance) const {
+    if (distance == 0) return false;
 
-    const std::pair<double,double> &floorData = floor_matrix_[col-1][row-1];
+    if (col < 0 || col >= FLOOR_MATRIX_COLS) return false;
+    if (row < 0 || row >= FLOOR_MATRIX_ROWS) return false;
+
+    const std::pair<double,double> &floorData = floor_matrix_[col][row];
     const double &min = floorData.first;
     const double &max = floorData.second;
 
-    if (distance < min) {
-        return IS_DIP;
+    if (distance >= (min - scan_floor_tolerance_) && distance <= (max + scan_floor_tolerance_)) {
+        return true;
     }
-    if (distance > max) {
-        return IS_OBSTACLE;
-    }
-    return IS_FLOOR;
+
+    return false;
 }
 
 template<typename T>
 void DepthImageToLaserScan::convert(const cv::Mat& image, const image_geometry::PinholeCameraModel& cam_model,
-    const sensor_msgs::LaserScanPtr& scan_msg) const{
+    const sensor_msgs::LaserScanPtr& scan_msg) {
   // Use correct principal point from calibration
   const float center_x = cam_model.cx();
   const int floor_y = image.rows;
@@ -290,17 +263,15 @@ void DepthImageToLaserScan::convert(const cv::Mat& image, const image_geometry::
         r = hypot(x, z);
       }
 
-      // Check if we hit floor, obstacle, or dip
-      int floor_status = is_floor(index, rows-v, r);
-      if (floor_status == IS_OBSTACLE) {
-          // Determine if this point should be used.
-          if(use_point(r, scan_msg->ranges[index], scan_msg->range_min, scan_msg->range_max)){
-            scan_msg->ranges[index] = r;
-          }
-      } else if (floor_status == IS_DIP) {
-          //TODO find better way of getting real floor distance
+#if CALIBRATION_MODE
+      calibrate_floor(index, rows-v-1, r);
+#else
+      // Determine if this point should be used.
+      if(!is_floor(index, rows-v-1, r)
+              && use_point(r, scan_msg->ranges[index], scan_msg->range_min, scan_msg->range_max)){
           scan_msg->ranges[index] = r;
       }
+#endif
 
     }
   }
@@ -352,17 +323,6 @@ sensor_msgs::LaserScanPtr DepthImageToLaserScan::convert_msg(const cv::Mat& imag
   const uint32_t ranges_size = image.cols;
   scan_msg->ranges.assign(ranges_size, std::numeric_limits<float>::quiet_NaN());
 
-#ifdef CALIBRATION_MODE
-  // run in floor calibration mode
-  static int counter = 0;
-  if (counter++ >= 200) {
-      if (counter == 201) {
-          printf("Starting collection...\n");
-      }
-      calibrate_floor(image, cam_model_, scan_msg);
-  }
-#else
-  // run in normal mode
   if (encoding == sensor_msgs::image_encodings::TYPE_16UC1)
   {
     convert<uint16_t>(image, cam_model_, scan_msg);
@@ -377,7 +337,6 @@ sensor_msgs::LaserScanPtr DepthImageToLaserScan::convert_msg(const cv::Mat& imag
     ss << "Depth image has unsupported encoding: " << encoding;
     throw std::runtime_error(ss.str());
   }
-#endif
 
   return scan_msg;
 }
@@ -403,6 +362,6 @@ const std::string& DepthImageToLaserScan::get_output_frame() {
 	return output_frame_id_;
 }
 
-void DepthImageToLaserScan::set_scan_tilt(const int scan_tilt) {
-	scan_tilt_ = scan_tilt;
+void DepthImageToLaserScan::set_scan_floor_tolerance(const double scan_floor_tolerance) {
+    scan_floor_tolerance_ = scan_floor_tolerance;
 }

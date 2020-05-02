@@ -614,9 +614,10 @@ void BaseRealSenseNode::getParameters()
     _pnh.param("publish_odom_tf", _publish_odom_tf, PUBLISH_ODOM_TF);
 
     // laser scan params
-    int scan_height, scan_tilt;
+    int scan_height;
+    double scan_floor_tolerance;
     _pnh.param("scan_height", scan_height, 1);
-    _pnh.param("scan_tilt", scan_tilt, 0);
+    _pnh.param("scan_floor_tolerance", scan_floor_tolerance, 0.0);
 
     double range_min, range_max;
     _pnh.param("scan_range_min", range_min, 0.1);
@@ -626,7 +627,7 @@ void BaseRealSenseNode::getParameters()
     _pnh.param("scan_output_frame", scan_output_frame, scan_output_frame_default);
 
     _dtl.set_scan_height(scan_height);
-    _dtl.set_scan_tilt(scan_tilt);
+    _dtl.set_scan_floor_tolerance(scan_floor_tolerance);
     _dtl.set_scan_time(1.0/_fps[DEPTH]);
     _dtl.set_range_limits(range_min, range_max);
     _dtl.set_output_frame(scan_output_frame);

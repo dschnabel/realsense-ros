@@ -92,7 +92,7 @@
   <arg name="scan_range_min"       default="0.1"/>
   <arg name="scan_range_max"       default="5.0"/>
   <arg name="scan_height"          default="100"/>
-  <arg name="scan_tilt"            default="0"/>
+  <arg name="scan_floor_tolerance" default="0.0"/>
 
 <!--  <node unless="$(arg external_manager)" pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen" required="$(arg required)"
 launch-prefix="gdbserver :1234"/> -->
@@ -186,7 +186,7 @@ launch-prefix="gdbserver :1234"/> -->
     <param name="scan_range_min"           type="double" value="$(arg scan_range_min)"/>
     <param name="scan_range_max"           type="double" value="$(arg scan_range_max)"/>
     <param name="scan_height"              type="int"    value="$(arg scan_height)"/>
-    <param name="scan_tilt"                type="int"    value="$(arg scan_tilt)"/>
+    <param name="scan_floor_tolerance"     type="double" value="$(arg scan_floor_tolerance)"/>
 
     <remap from="odom/sample"              to="/odom"/>
     <remap from="scan"                     to="/scan"/>

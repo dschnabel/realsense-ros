@@ -21,8 +21,8 @@
 
       <arg name="scan_range_min"       value="0.01"/>
       <arg name="scan_range_max"       value="2.0"/>
-      <arg name="scan_height"          value="70"/>
-      <arg name="scan_tilt"            value="15"/>
+      <arg name="scan_height"          value="50"/>
+      <arg name="scan_floor_tolerance" value="0.06"/>
     </include>
   </group>
 </launch>
