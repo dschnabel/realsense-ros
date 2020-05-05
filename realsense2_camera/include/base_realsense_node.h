@@ -218,8 +218,7 @@ namespace realsense2_camera
                           std::map<stream_index_pair, sensor_msgs::CameraInfo>& camera_info,
                           const std::map<stream_index_pair, std::string>& optical_frame_id,
                           const std::map<rs2_stream, std::string>& encoding,
-                          bool copy_data_from_frame = true,
-                          std::map<stream_index_pair, ros::Publisher>* scan_publishers = NULL);
+                          bool copy_data_from_frame = true, ros::Publisher>* scan_publishers = NULL);
         bool getEnabledProfile(const stream_index_pair& stream_index, rs2::stream_profile& profile);
 
         void publishAlignedDepthToOthers(rs2::frameset frames, const ros::Time& t);
@@ -320,6 +319,9 @@ namespace realsense2_camera
 
         stream_index_pair _base_stream;
         const std::string _namespace;
+
+        sensor_msgs::PointCloud2 _msg_pointcloud;
+        std::vector< unsigned int > _valid_pc_indices;
 
         depthimage_to_laserscan::DepthImageToLaserScan _dtl;
 
