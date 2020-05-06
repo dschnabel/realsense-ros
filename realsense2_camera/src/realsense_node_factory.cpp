@@ -34,8 +34,46 @@ RealSenseNodeFactory::RealSenseNodeFactory():
 	rs2::log_to_console(severity);
 }
 
+void raw_file_from_bytes(const std::string& filename, const std::vector<uint8_t> bytes)
+{
+    std::ofstream file(filename, std::ios::binary | std::ios::trunc);
+    if (!file.good())
+        throw std::runtime_error("Invalid binary file specified. Verify the target path and location permissions");
+    file.write((char*)bytes.data(), bytes.size());
+}
+
+std::vector<uint8_t> bytes_from_raw_file(const std::string& filename)
+{
+    std::ifstream file(filename.c_str(), std::ios::binary);
+    if (!file.good())
+        throw std::runtime_error("Invalid binary file specified. Verify the source path and location permissions");
+
+    // Determine the file length
+    file.seekg(0, std::ios_base::end);
+    std::size_t size = file.tellg();
+    if (!size)
+        throw std::runtime_error("Invalid binary file -zero-size");
+    file.seekg(0, std::ios_base::beg);
+
+    // Create a vector to store the data
+    std::vector<uint8_t> v(size);
+
+    // Load the data
+    file.read((char*)&v[0], size);
+
+    return v;
+}
+
 RealSenseNodeFactory::~RealSenseNodeFactory()
 {
+//	if (_device && RS_T265_PID == std::stoi(_device.get_info(RS2_CAMERA_INFO_PRODUCT_ID), 0, 16)) {
+//		// T265: save map
+//		std::cout << "Saving map to " << _t265_map_path << std::endl;
+//		raw_file_from_bytes(_t265_map_path, _device.first<rs2::pose_sensor>().export_localization_map());
+//		std::cout << "done." << std::endl;
+//	}
+
+
 	_is_alive = false;
 	if (_query_thread.joinable())
 	{
@@ -224,6 +262,8 @@ void RealSenseNodeFactory::onInit()
 		privateNh.param("serial_no", _serial_no, std::string(""));
     	privateNh.param("usb_port_id", _usb_port_id, std::string(""));
     	privateNh.param("device_type", _device_type, std::string(""));
+        privateNh.param("t265_map_path", _t265_map_path, std::string(""));
+        privateNh.param("t265_map_delete", _t265_map_delete, true);
 
 		std::string rosbag_filename("");
 		privateNh.param("rosbag_filename", rosbag_filename, std::string(""));
@@ -310,6 +350,19 @@ void RealSenseNodeFactory::StartDevice()
 		break;
 	case RS_T265_PID:
 		_realSenseNode = std::unique_ptr<T265RealsenseNode>(new T265RealsenseNode(nh, privateNh, _device, _serial_no));
+
+//		if (_t265_map_delete) {
+//			remove(_t265_map_path.c_str());
+//			printf("Map deleted\n");
+//		}
+//		if (access(_t265_map_path.c_str(), F_OK) != -1) {
+//			std::cout << "Loading Map from " << _t265_map_path << std::endl;
+//			_device.first<rs2::pose_sensor>().import_localization_map(bytes_from_raw_file(_t265_map_path));
+//			std::cout << "done." << std::endl;
+//		} else {
+//			std::cout << "No Map found." << std::endl;
+//		}
+
 		break;
 	default:
 		ROS_FATAL_STREAM("Unsupported device!" << " Product ID: 0x" << pid_str);

@@ -75,5 +75,8 @@ namespace realsense2_camera
         std::thread _query_thread;
         bool _is_alive;
 
+        std::string _t265_map_path;
+        bool _t265_map_delete;
+
     };
 }//end namespace
